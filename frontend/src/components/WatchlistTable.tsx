@@ -5,6 +5,7 @@ import type { StockData } from '../hooks/useStockWebSocket'
 
 interface Props {
   stockList: StockData[]
+  addToast?: (msg: string, type: 'success' | 'error' | 'info') => void
 }
 
 type SortKey = 'ticker' | 'price' | 'changePercent' | 'volume'
