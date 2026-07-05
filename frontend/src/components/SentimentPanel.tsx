@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Newspaper, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import axios from 'axios'
 
 interface SentimentData {
@@ -39,56 +39,50 @@ export default function SentimentPanel({ tickers }: Props) {
   useEffect(() => { fetchSentiments() }, [fetchSentiments])
 
   const getScoreInfo = (score: number) => {
-    if (score < 25) return { color: 'text-red-500', bar: 'bg-red-500', label: 'Bearish', icon: TrendingDown }
-    if (score < 45) return { color: 'text-orange-400', bar: 'bg-orange-500', label: 'Slightly Bearish', icon: TrendingDown }
-    if (score < 55) return { color: 'text-yellow-400', bar: 'bg-yellow-500', label: 'Neutral', icon: Minus }
-    if (score < 75) return { color: 'text-lime-400', bar: 'bg-lime-500', label: 'Slightly Bullish', icon: TrendingUp }
-    return { color: 'text-green-500', bar: 'bg-green-500', label: 'Bullish', icon: TrendingUp }
+    if (score < 25) return { color: 'var(--red)', bar: 'var(--red)', label: 'Bearish', icon: TrendingDown }
+    if (score < 45) return { color: '#ff9100', bar: '#ff9100', label: 'Slightly Bearish', icon: TrendingDown }
+    if (score < 55) return { color: '#ffc400', bar: '#ffc400', label: 'Neutral', icon: Minus }
+    if (score < 75) return { color: '#69f0ae', bar: '#69f0ae', label: 'Slightly Bullish', icon: TrendingUp }
+    return { color: 'var(--green)', bar: 'var(--green)', label: 'Bullish', icon: TrendingUp }
   }
 
   const lastTicker = tickers[tickers.length - 1]
   const lastSentiment = lastTicker ? sentiments[lastTicker] : null
 
   return (
-    <div className="glass-card rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Newspaper size={11} className="text-white" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">Sentiment</h3>
-            <p className="text-[9px] text-gray-600 font-medium uppercase tracking-wider leading-none">News analysis</p>
-          </div>
+    <div className="terminal-card p-3">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="text-xs font-semibold text-white">Sentiment</div>
+          <span className="text-[10px] text-muted">News Analysis</span>
         </div>
-        <button onClick={fetchSentiments} disabled={loading} className="text-gray-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.04]">
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+        <button onClick={fetchSentiments} disabled={loading} className="terminal-btn-outline text-[10px] px-1.5 py-0.5">
+          {loading ? '...' : 'Refresh'}
         </button>
       </div>
 
-      {error && <p className="text-red-400 text-[11px] mb-3 bg-red-500/8 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
+      {error && <div className="text-xs px-2 py-1.5 rounded-sm mb-2" style={{ background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid rgba(255,23,68,0.2)' }}>{error}</div>}
 
-      <div className="space-y-3 mb-4">
-        {tickers.map((t, i) => {
+      <div className="space-y-2.5 mb-3">
+        {tickers.map(t => {
           const s = sentiments[t]
           const info = s ? getScoreInfo(s.score) : null
           const Icon = info?.icon || Minus
           return (
-            <div key={t} className="fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-              <div className="flex items-center justify-between mb-1.5">
+            <div key={t}>
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
-                  <Icon size={10} className={info?.color || 'text-gray-600'} />
-                  <span className="text-xs font-semibold text-gray-300">{t}</span>
+                  {info && <Icon size={9} style={{ color: info.color }} />}
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>{t}</span>
                 </div>
-                <span className={`text-[10px] font-semibold ${info?.color || 'text-gray-600'}`}>
-                  {s ? `${s.score}` : '---'}
-                  {info && <span className="font-normal text-gray-600 ml-1">{info.label}</span>}
+                <span className="text-[10px] mono font-semibold" style={{ color: info?.color || 'var(--text-muted)' }}>
+                  {s ? `${s.score}` : '--'}
                 </span>
               </div>
-              <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+              <div className="h-1 rounded-full" style={{ background: 'var(--bg-secondary)' }}>
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ease-out ${info?.bar || 'bg-gray-700'}`}
-                  style={{ width: `${s ? s.score : 0}%` }}
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${s ? s.score : 0}%`, background: info?.bar || 'var(--bg-elevated)' }}
                 />
               </div>
             </div>
@@ -97,15 +91,12 @@ export default function SentimentPanel({ tickers }: Props) {
       </div>
 
       {lastSentiment && lastSentiment.headlines.length > 0 && (
-        <div className="pt-3.5 border-t border-white/[0.04]">
-          <div className="flex items-center gap-1.5 mb-3">
-            <span className="w-0.5 h-3 rounded-full bg-blue-500/50" />
-            <h4 className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Latest headlines</h4>
-          </div>
-          <div className="space-y-2">
+        <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-primary)' }}>
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">Headlines</div>
+          <div className="space-y-1.5">
             {lastSentiment.headlines.slice(0, 3).map((h, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-xs text-gray-500 bg-white/[0.02] rounded-lg p-2.5 leading-relaxed border border-white/[0.03]">
-                <span className="w-0.5 h-0.5 rounded-full bg-blue-400/60 mt-2 shrink-0" />
+              <div key={i} className="flex items-start gap-2 text-xs px-2 py-1.5 rounded-sm" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--blue)', marginTop: 5, flexShrink: 0 }} />
                 <span className="line-clamp-2">{h}</span>
               </div>
             ))}

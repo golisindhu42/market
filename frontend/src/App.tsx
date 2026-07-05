@@ -17,7 +17,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const saved = localStorage.getItem(key)
     if (saved) return JSON.parse(saved) as T
-  } catch { }
+  } catch {}
   return fallback
 }
 
@@ -57,7 +57,7 @@ function App() {
           localStorage.setItem(LS_HISTORY, JSON.stringify(next))
           return next
         })
-      } catch { }
+      } catch {}
     })
   }, [tickers])
 
@@ -84,92 +84,87 @@ function App() {
     return stockList.reduce((sum, s) => sum + s.price, 0)
   }, [stockList])
 
-  const alertCount = alerts.length
+  const greenCount = stockList.filter(s => (s.changePercent || 0) >= 0).length
+  const redCount = stockList.length - greenCount
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <MarketTicker />
 
-      <div className="sticky top-0 z-40 bg-[var(--bg-primary)]/80 backdrop-blur-xl border-b border-white/[0.04]">
+      <div className="sticky top-0 z-40" style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)' }}>
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between h-12">
+            <div className="flex items-center gap-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <span className="text-white font-bold text-[10px] tracking-tight">MP</span>
+                <div style={{ background: 'linear-gradient(135deg, #448aff, #7c4dff)', borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="text-white font-bold text-[10px]" style={{ fontFamily: 'var(--font-mono)' }}>MP</span>
                 </div>
-                <div>
-                  <h1 className="text-sm font-bold text-white tracking-tight leading-none">
-                    Market<span className="text-gradient">Pulse</span>
-                  </h1>
-                  <p className="text-[9px] text-gray-600 font-medium tracking-wider uppercase leading-none mt-0.5">AI Intelligence</p>
-                </div>
+                <span className="text-sm font-bold text-white tracking-tight" style={{ fontFamily: 'var(--font-sans)' }}>
+                  Market<span style={{ color: 'var(--blue)' }}>Pulse</span>
+                </span>
               </div>
-              <div className="hidden md:flex items-center gap-1.5 text-[11px] pl-4 border-l border-white/[0.06]">
-                <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' : reconnecting ? 'bg-amber-500' : 'bg-red-500'}`} />
-                <span className="text-gray-500 font-medium">{connected ? 'Live' : reconnecting ? 'Reconnecting...' : 'Offline'}</span>
+              <div className="hidden md:flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : reconnecting ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ marginRight: 4 }} />
+                {connected ? 'LIVE' : reconnecting ? 'RECONNECTING' : 'OFFLINE'}
               </div>
             </div>
-
             <div className="flex items-center gap-2">
               {tickers.length >= 2 && (
-                <button
-                  onClick={() => setShowRadar(true)}
-                  className="text-[11px] font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-gray-300 hover:text-white rounded-lg px-3 py-1.5 transition-all duration-200 border border-white/[0.06]"
-                >
-                  Radar
-                </button>
+                <button onClick={() => setShowRadar(true)} className="terminal-btn-outline text-xs px-3 py-1.5">Radar</button>
               )}
-              <AlertBell count={alertCount} onClick={() => setShowAlerts(!showAlerts)} />
+              <AlertBell count={alerts.length} onClick={() => setShowAlerts(!showAlerts)} />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <TickerSearch tickers={tickers} onAdd={addTicker} onRemove={removeTicker} />
 
         {stockList.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="glass-card rounded-xl px-4 py-3">
-              <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider mb-1">Watchlist</p>
-              <p className="text-lg font-bold text-white tabular-nums">{stockList.length}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="terminal-card p-3">
+              <div className="text-[10px] font-semibold tracking-wider uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Watchlist</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-bold text-white mono">{stockList.length}</span>
+                {greenCount > 0 && <span className="text-xs mono text-green">{greenCount} ▲</span>}
+                {redCount > 0 && <span className="text-xs mono text-red">{redCount} ▼</span>}
+              </div>
             </div>
-            <div className="glass-card rounded-xl px-4 py-3">
-              <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider mb-1">Total Value</p>
-              <p className="text-lg font-bold text-white tabular-nums">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+            <div className="terminal-card p-3">
+              <div className="text-[10px] font-semibold tracking-wider uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Total Value</div>
+              <span className="text-lg font-bold text-white mono">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
-            <div className="glass-card rounded-xl px-4 py-3">
-              <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider mb-1">Day Change</p>
-              <p className={`text-lg font-bold tabular-nums ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <div className="terminal-card p-3">
+              <div className="text-[10px] font-semibold tracking-wider uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Day Change</div>
+              <span className={`text-lg font-bold mono ${totalChange >= 0 ? 'text-green' : 'text-red'}`}>
                 {totalChange >= 0 ? '+' : ''}{totalChange.toFixed(2)}%
-              </p>
+              </span>
             </div>
-            <div className="glass-card rounded-xl px-4 py-3">
-              <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider mb-1">Sentiment</p>
-              <p className={`text-lg font-bold tabular-nums ${sentimentAvg >= 60 ? 'text-green-500' : sentimentAvg >= 40 ? 'text-amber-500' : 'text-red-500'}`}>
+            <div className="terminal-card p-3">
+              <div className="text-[10px] font-semibold tracking-wider uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Sentiment</div>
+              <span className={`text-lg font-bold mono ${sentimentAvg >= 60 ? 'text-green' : sentimentAvg >= 40 ? 'text-amber-500' : 'text-red'}`}>
                 {Math.round(sentimentAvg)}
-              </p>
+              </span>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-8 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {tickers.map((t, i) => (
-                <div key={t} className="fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
+                <div key={t} className="fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
                   {stockData[t] ? (
                     <StockCard data={stockData[t]} history={history[t] || []} />
                   ) : (
-                    <div className="glass-card rounded-xl p-4 shimmer">
+                    <div className="terminal-card p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-2 h-2 rounded-full bg-white/5" />
-                        <div className="h-4 bg-white/5 rounded w-16" />
+                        <div className="w-2 h-2 rounded-full" style={{ background: 'var(--text-muted)' }} />
+                        <div className="h-3 w-16" style={{ background: 'var(--bg-hover)', borderRadius: 2 }} />
                       </div>
-                      <div className="h-8 bg-white/5 rounded w-24 mb-2" />
-                      <div className="h-3 bg-white/5 rounded w-full" />
-                      <div className="h-12 bg-white/5 rounded w-full mt-3" />
+                      <div className="h-7 w-24 mb-2" style={{ background: 'var(--bg-hover)', borderRadius: 2 }} />
+                      <div className="h-2.5 w-full" style={{ background: 'var(--bg-hover)', borderRadius: 2 }} />
                     </div>
                   )}
                 </div>
@@ -177,41 +172,33 @@ function App() {
             </div>
           </div>
 
-          <div className="lg:col-span-4 space-y-4">
+          <div className="lg:col-span-4 space-y-3">
             <AIChatPanel tickers={tickers} />
             <SentimentPanel tickers={tickers} />
-            <FearGreedMeter
-              sentimentAvg={sentimentAvg}
-              priceChangeAvg={priceChangeAvg}
-              volumeDeviation={0.5}
-            />
+            <FearGreedMeter sentimentAvg={sentimentAvg} priceChangeAvg={priceChangeAvg} volumeDeviation={0.5} />
           </div>
         </div>
       </div>
 
       {showAlerts && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-end p-4 fade-in" onClick={() => setShowAlerts(false)}>
-          <div className="glass-card rounded-xl p-4 w-80 max-h-[80vh] overflow-y-auto scale-in" onClick={e => e.stopPropagation()} style={{ background: 'rgba(12, 19, 34, 0.95)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white">Notifications</h3>
-              <span className="text-[11px] text-gray-500 font-medium">{alerts.length} total</span>
+        <div className="fixed inset-0 z-50 flex items-start justify-end p-4 fade-in" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setShowAlerts(false)}>
+          <div className="terminal-card p-4 w-80 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-white">Notifications</span>
+              <span className="text-xs text-muted">{alerts.length} total</span>
             </div>
             {alerts.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-xs text-gray-600">No alerts yet</p>
-              </div>
+              <div className="text-center py-8"><span className="text-xs text-muted">No alerts yet</span></div>
             )}
             <div className="space-y-2">
-              {alerts.map((a, i) => (
-                <div key={a.id} className="fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
-                  <div className="flex items-start gap-3 bg-white/[0.03] rounded-lg p-3 border border-white/[0.04]">
-                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 shadow-lg ${a.severity === 'high' ? 'bg-red-500 shadow-red-500/30' : 'bg-amber-500 shadow-amber-500/30'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-white">{a.ticker}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{a.message}</p>
-                    </div>
-                    <button onClick={() => dismissAlert(a.id)} className="text-gray-600 hover:text-white transition-colors text-xs p-1">&times;</button>
+              {alerts.map((a) => (
+                <div key={a.id} className="flex items-start gap-2.5 p-2.5 rounded-md" style={{ background: 'var(--bg-tertiary)' }}>
+                  <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${a.severity === 'high' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-white">{a.ticker}</div>
+                    <div className="text-xs text-muted mt-0.5">{a.message}</div>
                   </div>
+                  <button onClick={() => dismissAlert(a.id)} className="text-xs text-muted hover:text-white p-0.5">&times;</button>
                 </div>
               ))}
             </div>
