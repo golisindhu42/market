@@ -1,3 +1,5 @@
+import { Gauge, TrendingUp, Activity } from 'lucide-react'
+
 interface Props {
   sentimentAvg: number
   priceChangeAvg: number
@@ -5,66 +7,65 @@ interface Props {
 }
 
 export default function FearGreedMeter({ sentimentAvg, priceChangeAvg, volumeDeviation }: Props) {
-  const score = Math.round(
-    (sentimentAvg * 0.4) +
-    (Math.min(Math.abs(priceChangeAvg) * 10, 100) * 0.3) +
-    (Math.min(volumeDeviation * 50, 100) * 0.3)
-  )
-  const clamped = Math.max(0, Math.min(100, score))
-
-  const getLabel = (s: number) => {
-    if (s <= 20) return { text: 'Extreme Fear', color: '#dc2626' }
-    if (s <= 40) return { text: 'Fear', color: '#ea580c' }
-    if (s <= 60) return { text: 'Neutral', color: '#eab308' }
-    if (s <= 80) return { text: 'Greed', color: '#22c55e' }
-    return { text: 'Extreme Greed', color: '#16a34a' }
+  const displayValue = Math.min(100, Math.max(0, sentimentAvg))
+  const getBand = (v: number) => {
+    if (v < 20) return { label: 'Extreme Fear', color: '#ef4444', bar: 'bg-red-500' }
+    if (v < 40) return { label: 'Fear', color: '#f97316', bar: 'bg-orange-500' }
+    if (v < 60) return { label: 'Neutral', color: '#eab308', bar: 'bg-yellow-500' }
+    if (v < 80) return { label: 'Greed', color: '#22c55e', bar: 'bg-green-500' }
+    return { label: 'Extreme Greed', color: '#16a34a', bar: 'bg-emerald-500' }
   }
+  const band = getBand(displayValue)
 
-  const label = getLabel(clamped)
-  const angle = (clamped / 100) * 180 - 90
-
-  const toRad = (deg: number) => (deg * Math.PI) / 180
-  const cx = 100
-  const cy = 100
-  const r = 80
-
-  const polarToCart = (deg: number) => ({
-    x: cx + r * Math.cos(toRad(deg)),
-    y: cy + r * Math.sin(toRad(deg)),
-  })
-
-  const zones = [
-    { from: -90, to: -54, color: '#dc2626' },
-    { from: -54, to: -18, color: '#ea580c' },
-    { from: -18, to: 18, color: '#eab308' },
-    { from: 18, to: 54, color: '#22c55e' },
-    { from: 54, to: 90, color: '#16a34a' },
+  const metrics = [
+    { icon: TrendingUp, label: 'Price Δ', value: `${priceChangeAvg >= 0 ? '+' : ''}${priceChangeAvg.toFixed(1)}%`, color: priceChangeAvg >= 0 ? 'text-green-500' : 'text-red-500' },
+    { icon: Activity, label: 'Volatility', value: `${(volumeDeviation * 100).toFixed(0)}%`, color: 'text-blue-400' },
   ]
 
-  const describeArc = (from: number, to: number) => {
-    const f = polarToCart(from)
-    const t = polarToCart(to)
-    const large = to - from > 180 ? 1 : 0
-    return `M ${f.x} ${f.y} A ${r} ${r} 0 ${large} 1 ${t.x} ${t.y}`
-  }
-
-  const needleLen = 65
-  const needleX = cx + needleLen * Math.cos(toRad(angle))
-  const needleY = cy + needleLen * Math.sin(toRad(angle))
+  const radius = 60
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (displayValue / 100) * circumference
 
   return (
-    <div className="bg-[#12121e] border border-gray-800 rounded-xl p-4">
-      <h3 className="text-sm font-semibold text-gray-400 mb-2">Fear & Greed</h3>
-      <div className="flex flex-col items-center">
-        <svg width="200" height="130" viewBox="0 0 200 130">
-          {zones.map((z, i) => (
-            <path key={i} d={describeArc(z.from, z.to)} fill="none" stroke={z.color} strokeWidth="12" strokeLinecap="butt" opacity={0.6} />
-          ))}
-          <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="white" strokeWidth="2" strokeLinecap="round" />
-          <circle cx={cx} cy={cy} r="4" fill="white" />
+    <div className="glass-card rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Gauge size={14} className="text-blue-400" />
+        <h3 className="text-sm font-semibold text-white">Fear & Greed Index</h3>
+      </div>
+
+      <div className="flex items-center justify-center mb-4 relative">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+          <circle
+            cx="75" cy="75" r={radius}
+            fill="none"
+            stroke={band.color}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            transform="rotate(-90 75 75)"
+            className="transition-all duration-1000 ease-out"
+            style={{ filter: `drop-shadow(0 0 8px ${band.color}40)` }}
+          />
         </svg>
-        <div className="text-3xl font-bold text-white -mt-2">{clamped}</div>
-        <div className="text-sm font-semibold" style={{ color: label.color }}>{label.text}</div>
+        <div className="absolute flex flex-col items-center">
+          <span className="text-3xl font-bold text-white tabular-nums">{Math.round(displayValue)}</span>
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: band.color }}>{band.label}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {metrics.map(m => {
+          const Icon = m.icon
+          return (
+            <div key={m.label} className="bg-white/[0.03] rounded-lg p-2.5 text-center border border-white/5">
+              <Icon size={13} className={`mx-auto mb-1 ${m.color}`} />
+              <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">{m.label}</p>
+              <p className={`text-sm font-bold ${m.color} tabular-nums`}>{m.value}</p>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

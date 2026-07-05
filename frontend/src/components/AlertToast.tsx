@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { X, AlertTriangle, Bell } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Bell, AlertTriangle, Info, X } from 'lucide-react'
+
 import type { AlertData } from '../hooks/useStockWebSocket'
 
 interface Props {
@@ -7,58 +8,71 @@ interface Props {
   onDismiss: (id: string) => void
 }
 
-export default function AlertToast({ alerts, onDismiss }: Props) {
-  const visible = alerts.slice(0, 3)
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
-      {visible.map((alert) => (
-        <ToastItem key={alert.id} alert={alert} onDismiss={onDismiss} />
-      ))}
-    </div>
-  )
+interface BellProps {
+  count: number
+  onClick: () => void
 }
 
-function ToastItem({ alert, onDismiss }: { alert: AlertData; onDismiss: (id: string) => void }) {
-  const [exiting, setExiting] = useState(false)
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setExiting(true)
-      setTimeout(() => onDismiss(alert.id), 300)
-    }, 8000)
-    return () => clearTimeout(t)
-  }, [alert.id, onDismiss])
-
-  const borderColor = alert.severity === 'high' ? 'border-red-500' : 'border-amber-500'
-
+export function AlertBell({ count, onClick }: BellProps) {
   return (
-    <div
-      className={`bg-[#1a1a2e] border-l-4 ${borderColor} border-gray-700 rounded-lg p-3 shadow-lg flex items-start gap-2 transition-all duration-300 ${
-        exiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'
-      }`}
-    >
-      <AlertTriangle size={16} className={alert.severity === 'high' ? 'text-red-500 mt-0.5' : 'text-amber-500 mt-0.5'} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white">{alert.ticker}</p>
-        <p className="text-xs text-gray-400 truncate">{alert.message}</p>
-      </div>
-      <button onClick={() => onDismiss(alert.id)} className="text-gray-500 hover:text-white shrink-0">
-        <X size={14} />
-      </button>
-    </div>
-  )
-}
-
-export function AlertBell({ count, onClick }: { count: number; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="relative text-gray-400 hover:text-white transition-colors">
-      <Bell size={18} />
+    <button onClick={onClick} className="relative p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+      <Bell size={16} className="text-gray-500" />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center shadow-lg shadow-amber-500/30">
           {count > 9 ? '9+' : count}
         </span>
       )}
     </button>
+  )
+}
+
+export default function AlertToast({ alerts, onDismiss }: Props) {
+  const [visible, setVisible] = useState<string[]>([])
+  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  useEffect(() => {
+    alerts.forEach(a => {
+      if (!visible.includes(a.id)) {
+        setVisible(prev => [...prev, a.id])
+        const t = setTimeout(() => {
+          setVisible(prev => prev.filter(id => id !== a.id))
+          timers.current.delete(a.id)
+        }, 5000)
+        timers.current.set(a.id, t)
+      }
+    })
+  }, [alerts])
+
+  useEffect(() => {
+    return () => {
+      timers.current.forEach(t => clearTimeout(t))
+    }
+  }, [])
+
+  const latest = alerts.slice(-3)
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
+      {latest.filter(a => visible.includes(a.id)).map(a => (
+        <div
+          key={a.id}
+          className="pointer-events-auto glass-card rounded-xl p-3.5 flex items-start gap-3 shadow-2xl border border-white/10 slide-up"
+          style={{ minWidth: 280, maxWidth: 360 }}
+        >
+          {a.severity === 'high' ? (
+            <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
+          ) : (
+            <Info size={16} className="text-amber-400 shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white">{a.ticker}</p>
+            <p className="text-xs text-gray-400 leading-relaxed">{a.message}</p>
+          </div>
+          <button onClick={() => onDismiss(a.id)} className="text-gray-600 hover:text-white shrink-0 mt-0.5 transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
   )
 }

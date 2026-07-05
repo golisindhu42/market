@@ -1,89 +1,81 @@
-import { useState, useEffect } from 'react'
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts'
+import { useEffect, useState } from 'react'
+import { X, BarChart3, TrendingUp, TrendingDown } from 'lucide-react'
 import axios from 'axios'
+import type { StockData } from '../hooks/useStockWebSocket'
 
 interface Props {
   tickers: string[]
   onClose: () => void
 }
 
-const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']
-
 export default function CompetitorRadar({ tickers, onClose }: Props) {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<StockData[]>([])
 
   useEffect(() => {
-    const fetchRadar = async () => {
-      if (tickers.length < 2) return
-      setLoading(true)
-      try {
-        const base = import.meta.env.VITE_API_BASE_URL || ''
-        const res = await axios.get(`${base}/api/tickers/compare?tickers=${tickers.join(',')}`)
-        const tickerData = res.data.tickers
-        const dimensions = ['Momentum', 'Sentiment', 'Volume Activity', 'Volatility', '52W Performance']
-        const rows = dimensions.map(dim => {
-          const entry: any = { dimension: dim }
-          tickerData.forEach((td: any) => {
-            let val = 50
-            switch (dim) {
-              case 'Momentum':
-                val = Math.min(100, Math.max(0, (td.changePercent + 10) * 5))
-                break
-              case 'Sentiment':
-                val = td.sentiment || 50
-                break
-              case 'Volume Activity':
-                val = Math.min(100, (td.volume / 1000000) * 10)
-                break
-              case 'Volatility':
-                val = 80 - Math.min(60, Math.abs(td.changePercent) * 5)
-                break
-              case '52W Performance':
-                val = Math.min(100, Math.max(0, ((td.price - td.low) / (td.high - td.low || 1)) * 100))
-                break
-            }
-            entry[td.ticker] = Math.round(val)
-          })
-          return entry
-        })
-        setData(rows)
-      } catch {
-        setData([])
+    const fetchAll = async () => {
+      const base = import.meta.env.VITE_API_BASE_URL || ''
+      const results: StockData[] = []
+      for (const t of tickers) {
+        try {
+          const res = await axios.get(`${base}/api/stock/${t}`)
+          results.push(res.data)
+        } catch { }
       }
-      setLoading(false)
+      setData(results)
     }
-    fetchRadar()
+    fetchAll()
   }, [tickers])
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-        <div className="bg-[#12121e] border border-gray-800 rounded-xl p-6" onClick={e => e.stopPropagation()}>
-          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
-        </div>
-      </div>
-    )
-  }
+  if (data.length === 0) return null
+
+  const maxPrice = Math.max(...data.map(d => d.price))
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#12121e] border border-gray-800 rounded-xl p-6 w-[600px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-white">Competitor Comparison</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">&times;</button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-card rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <BarChart3 size={16} className="text-blue-400" />
+            <h2 className="text-base font-bold text-white">Competitor Radar</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5">
+            <X size={18} />
+          </button>
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <RadarChart data={data}>
-            <PolarGrid stroke="#333" />
-            <PolarAngleAxis dataKey="dimension" tick={{ fill: '#999', fontSize: 11 }} />
-            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#666', fontSize: 10 }} />
-            {tickers.map((t, i) => (
-              <Radar key={t} name={t} dataKey={t} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} />
-            ))}
-            <Legend wrapperStyle={{ fontSize: 12, color: '#999' }} />
-          </RadarChart>
-        </ResponsiveContainer>
+
+        <div className="space-y-4">
+          {data.map(d => {
+            const isPositive = d.changePercent >= 0
+            const barWidth = (d.price / maxPrice) * 100
+            return (
+              <div key={d.ticker}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">{d.ticker}</span>
+                    <span className="text-[11px] text-gray-600">${d.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {isPositive ? <TrendingUp size={13} className="text-green-500" /> : <TrendingDown size={13} className="text-red-500" />}
+                    <span className={`text-xs font-bold tabular-nums ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                      {isPositive ? '+' : ''}{d.changePercent.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1 text-[10px] text-gray-600">
+                  <span>Vol: {(d.volume / 1e6).toFixed(1)}M</span>
+                  <span>H: ${d.high.toFixed(2)}</span>
+                  <span>L: ${d.low.toFixed(2)}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
