@@ -2,9 +2,9 @@
 
 **AI-Powered Real-Time Equity Intelligence Platform**
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-00C853?logo=vercel)](https://marketpulse-ai-app.vercel.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.138-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-764ABC)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 [![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3-FF6B35)](https://groq.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python)](https://www.python.org)
@@ -13,7 +13,7 @@
 
 ## Features
 
-- **Live Multi-Ticker Dashboard** — Track up to 10 tickers simultaneously with real-time price streaming via WebSocket, updating every 2 seconds
+- **Live Multi-Ticker Dashboard** — Track up to 10 tickers simultaneously with real-time price updates every 2 seconds via HTTP polling
 - **AI Market Copilot Chat** — Ask natural language questions like "Why is Tesla dropping?" and get intelligent answers powered by Groq LLaMA-3.3-70b
 - **Sentiment Score Engine** — Each ticker scored 0-100 based on analysis of 20 news headlines using TextBlob NLP, displayed with color-coded meters
 - **Real-Time Anomaly Detection** — Automatic alerts for volume spikes (>200% of average) and price movements (>3% in 5 minutes)
@@ -31,7 +31,7 @@
 | AI Engine | Groq LLaMA-3.3-70b | Ultra-fast inference, free tier available |
 | Sentiment | TextBlob | Lightweight NLP, no GPU required |
 | Database | SQLite | Zero-config, file-based, perfect for caching |
-| Deployment | Vercel (frontend), Railway (backend) | Free tiers, GitHub integration, zero-config |
+| Deployment | Vercel (full-stack) | Free tier, GitHub integration, auto-deploy |
 
 ## Getting Started
 
@@ -45,7 +45,7 @@
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/marketpulse-ai.git
+git clone https://github.com/golisindhu42/market.git
 cd marketpulse-ai
 ```
 
@@ -82,7 +82,7 @@ Open [http://localhost:5173](http://localhost:5173) and start tracking tickers!
 │  │              useStockWebSocket Hook                │  │
 │  └───────────────────┬───────────────────────────────┘  │
 └──────────────────────┼──────────────────────────────────┘
-                       │ WebSocket + REST
+                        │ HTTP Polling + REST
 ┌──────────────────────┼──────────────────────────────────┐
 │              FastAPI Backend                              │
 │  ┌───────────────────┴───────────────────────────────┐  │
@@ -105,26 +105,28 @@ Open [http://localhost:5173](http://localhost:5173) and start tracking tickers!
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `WS` | `/ws/stocks` | Real-time stock data stream |
+| `POST` | `/api/stock/poll` | Live stock data for multiple tickers |
 | `GET` | `/api/stock/{ticker}/history` | 30-day closing prices |
 | `GET` | `/api/stock/{ticker}/info` | Company info and stats |
 | `GET` | `/api/stock/{ticker}/sentiment` | Sentiment score and headlines |
 | `GET` | `/api/tickers/compare?tickers=A,B` | Multi-ticker comparison |
 | `POST` | `/api/ai/chat` | Ask the AI market copilot |
 
+## Live Demo
+
+**https://marketpulse-ai-app.vercel.app**
+
 ## Deployment
 
-**Frontend (Vercel):**
-1. Connect your GitHub repo
-2. Set root directory to `frontend`
-3. Build command: `npm run build`, output: `dist`
-4. Add env var: `VITE_API_BASE_URL` → your Railway backend URL
+This project is deployed on **Vercel** (full-stack — frontend static build + Python serverless backend).
 
-**Backend (Railway):**
-1. Connect your GitHub repo
-2. Set root directory to `backend`
-3. Railway auto-detects Python
-4. Add env vars: `GROQ_API_KEY`, `NEWS_API_KEY`
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/golisindhu42/market)
+
+**Required environment variables:**
+- `GROQ_API_KEY` — from [console.groq.com](https://console.groq.com)
+- `NEWS_API_KEY` — from [newsapi.org](https://newsapi.org)
+- `CORS_ORIGINS` — comma-separated allowed origins
+- `ENVIRONMENT` — `production`
 
 ## License
 
