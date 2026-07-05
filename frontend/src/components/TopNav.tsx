@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Bell, Bot, User, ChevronDown, TrendingUp, Plus, X, Sparkles, Settings, LogOut, Briefcase, PieChart, CreditCard, Bookmark } from 'lucide-react'
+import { Search, Bell, Bot, TrendingUp, Plus, X, Sparkles } from 'lucide-react'
+import ProfileDropdown from './ProfileDropdown'
 
 interface Props {
   tickers: string[]
@@ -12,25 +13,17 @@ interface Props {
   onOpenNotifications: () => void
   recentSearches: string[]
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void
+  onNavigate?: (path: string) => void
+  onLogout?: () => void
 }
 
 const RECENT = ['TSLA', 'AAPL', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'META', 'SPY']
 
-const menuItems = [
-  { icon: User, label: 'My Profile', shortcut: '⌘P' },
-  { icon: PieChart, label: 'Dashboard', shortcut: '⌘D' },
-  { icon: Briefcase, label: 'Portfolio', shortcut: '⌘O' },
-  { icon: Bookmark, label: 'Watchlist', shortcut: '⌘W' },
-  { icon: Settings, label: 'Settings', shortcut: '⌘,' },
-  { icon: CreditCard, label: 'Billing', shortcut: null },
-  { icon: LogOut, label: 'Logout', shortcut: '⇧⌘Q' },
-]
-
-export default function TopNav({ tickers, onAdd, onRemove, connected, alertCount, onOpenAI, onOpenNotifications, recentSearches, addToast }: Props) {
+export default function TopNav({ tickers, onAdd, onRemove, connected, alertCount, onOpenAI, onOpenNotifications, recentSearches, addToast, onNavigate, onLogout }: Props) {
   const [query, setQuery] = useState('')
   const [focused, setFocused] = useState(false)
-  const [showProfile, setShowProfile] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const profileRef = useRef<HTMLButtonElement>(null)
 
   const filtered = RECENT.filter(t =>
     t.toLowerCase().includes(query.toLowerCase()) && !tickers.includes(t)
@@ -50,9 +43,14 @@ export default function TopNav({ tickers, onAdd, onRemove, connected, alertCount
     setFocused(false)
   }
 
-  const handleMenuItem = (label: string) => {
-    setShowProfile(false)
-    addToast(`Navigating to ${label}...`, 'info')
+  const handleNavigate = (path: string) => {
+    onNavigate?.(path)
+    addToast(`Navigating to ${path}...`, 'info')
+  }
+
+  const handleLogout = () => {
+    onLogout?.()
+    addToast('Logging out...', 'info')
   }
 
   return (
@@ -196,55 +194,11 @@ export default function TopNav({ tickers, onAdd, onRemove, connected, alertCount
         </motion.button>
 
         <div style={{ position: 'relative' }}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowProfile(!showProfile)}
-            className="btn-secondary"
-            title="Profile menu"
-            style={{ padding: '4px 8px 4px 4px', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, fontSize: 12 }}
-          >
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, var(--blue), var(--purple))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <User size={12} className="text-white" />
-            </motion.div>
-            <span style={{ fontWeight: 500 }}>Admin</span>
-            <motion.div animate={{ rotate: showProfile ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown size={12} style={{ color: 'var(--text-dim)' }} />
-            </motion.div>
-          </motion.button>
-
-          <AnimatePresence>
-            {showProfile && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="glass-card-elevated"
-                style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 200, padding: 4, borderRadius: 12, zIndex: 200 }}
-              >
-                {menuItems.map((item, i) => (
-                  <motion.button
-                    key={item.label}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.02 }}
-                    onClick={() => handleMenuItem(item.label)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500, cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <item.icon size={13} style={{ color: item.label === 'Logout' ? 'var(--red)' : 'var(--text-dim)' }} />
-                    <span style={{ color: item.label === 'Logout' ? 'var(--red)' : undefined }}>{item.label}</span>
-                    {item.shortcut && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{item.shortcut}</span>}
-                  </motion.button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <ProfileDropdown
+            triggerRef={profileRef}
+            onNavigate={handleNavigate}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
 
