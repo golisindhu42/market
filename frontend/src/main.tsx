@@ -7,6 +7,19 @@ import ErrorBoundary from './components/ErrorBoundary'
 import AppRoutes from './Routes'
 import './index.css'
 
+const saved = (() => {
+  try {
+    const s = localStorage.getItem('marketpulse_settings')
+    if (s) return JSON.parse(s)
+  } catch {}
+  return null
+})()
+if (saved) {
+  document.documentElement.setAttribute('data-theme', saved.darkMode !== false ? 'dark' : 'light')
+} else {
+  document.documentElement.setAttribute('data-theme', 'dark')
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

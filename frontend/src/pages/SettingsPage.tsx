@@ -1,8 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Moon, Sun, Bell, Shield, Key, Smartphone, Save, ArrowLeft, Monitor, Palette } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard } from '../context/DashboardContext'
+
+const LS_SETTINGS = 'marketpulse_settings'
+const DEFAULT_SETTINGS = {
+  darkMode: true,
+  language: 'English',
+  accent: 'Blue',
+  notifications: { price: true, earnings: true, aiSignal: true, system: false },
+}
 
 const languages = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese']
 const accentColors = [
@@ -13,6 +21,23 @@ const accentColors = [
   { name: 'Rose', color: '#F43F5E' },
 ]
 
+function loadSettings() {
+  try {
+    const s = localStorage.getItem(LS_SETTINGS)
+    if (s) return { ...DEFAULT_SETTINGS, ...JSON.parse(s) }
+  } catch {}
+  return DEFAULT_SETTINGS
+}
+
+function applyTheme(dark: boolean) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+}
+
+function applyAccent(name: string) {
+  const c = accentColors.find(a => a.name === name)
+  if (c) document.documentElement.style.setProperty('--accent', c.color)
+}
+
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { addToast } = useDashboard()
@@ -22,12 +47,30 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({ price: true, earnings: true, aiSignal: true, system: false })
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    const s = loadSettings()
+    setDarkMode(s.darkMode)
+    setSelectedLang(s.language)
+    setSelectedAccent(s.accent)
+    setNotifications(s.notifications)
+    applyTheme(s.darkMode)
+    applyAccent(s.accent)
+  }, [])
+
+  useEffect(() => {
+    applyTheme(darkMode)
+  }, [darkMode])
+
   const handleSave = () => {
     setSaving(true)
+    const settings = { darkMode, language: selectedLang, accent: selectedAccent, notifications }
+    localStorage.setItem(LS_SETTINGS, JSON.stringify(settings))
+    applyTheme(darkMode)
+    applyAccent(selectedAccent)
     setTimeout(() => {
       setSaving(false)
       addToast('Settings saved successfully', 'success')
-    }, 600)
+    }, 400)
   }
 
   return (

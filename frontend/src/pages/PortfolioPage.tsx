@@ -1,5 +1,6 @@
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, PieChart as PieChartIcon, ArrowLeft, RefreshCw, Sparkles } from 'lucide-react'
+import { Download, PieChart as PieChartIcon, ArrowLeft, RefreshCw, Sparkles, FileSpreadsheet, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard } from '../context/DashboardContext'
 
@@ -24,9 +25,43 @@ const allocation = [
 export default function PortfolioPage() {
   const navigate = useNavigate()
   const { addToast } = useDashboard()
+  const [showExport, setShowExport] = useState(false)
+  const exportRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setShowExport(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0)
   const totalCost = holdings.reduce((sum, h) => sum + h.shares * h.avgPrice, 0)
+
+  const handleExportCSV = () => {
+    const headers = 'Ticker,Shares,Avg Price,Current Price,Value,Change %'
+    const rows = holdings.map(h => `${h.ticker},${h.shares},${h.avgPrice.toFixed(2)},${h.currentPrice.toFixed(2)},$${(h.shares * h.currentPrice).toFixed(2)},${h.change > 0 ? '+' : ''}${h.change.toFixed(1)}%`)
+    const csv = [headers, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'portfolio.csv'; a.click()
+    URL.revokeObjectURL(url)
+    setShowExport(false)
+    addToast('CSV exported successfully', 'success')
+  }
+
+  const handleExportPDF = () => {
+    const text = `Portfolio Summary\n${'='.repeat(40)}\n${holdings.map(h => `${h.ticker}: ${h.shares} shares @ $${h.currentPrice.toFixed(2)} (${h.change > 0 ? '+' : ''}${h.change.toFixed(1)}%)`).join('\n')}\n${'='.repeat(40)}\nTotal: $${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    const blob = new Blob([text], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'portfolio.txt'; a.click()
+    URL.revokeObjectURL(url)
+    setShowExport(false)
+    addToast('Report exported (TXT format)', 'success')
+  }
   const totalPL = totalValue - totalCost
   const totalPLPercent = ((totalValue / totalCost) - 1) * 100
 
@@ -59,9 +94,23 @@ export default function PortfolioPage() {
               <PieChartIcon size={14} style={{ color: 'var(--text-dim)' }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Holdings</span>
             </div>
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.9 }} onClick={() => { addToast('Exporting portfolio...', 'success') }} title="Export" className="btn-secondary" style={{ padding: '4px 10px', borderRadius: 6, fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Download size={10} /> Export
-            </motion.button>
+            <div ref={exportRef} style={{ position: 'relative' }}>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.9 }} onClick={() => setShowExport(!showExport)} title="Export" className="btn-secondary" style={{ padding: '4px 10px', borderRadius: 6, fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Download size={10} /> Export
+              </motion.button>
+              {showExport && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111827', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 4, zIndex: 10, minWidth: 140, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                  {[
+                    { icon: FileSpreadsheet, label: 'Export CSV', action: handleExportCSV },
+                    { icon: FileText, label: 'Export Report', action: handleExportPDF },
+                  ].map(item => (
+                    <motion.button key={item.label} whileHover={{ background: 'rgba(255,255,255,0.05)' }} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6, width: '100%', border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}>
+                      <item.icon size={12} style={{ color: 'var(--text-dim)' }} /> {item.label}
+                    </motion.button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {holdings.map((h, i) => (
