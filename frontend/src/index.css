@@ -25,6 +25,9 @@
     --red-dim: rgba(239, 68, 68, 0.1);
     --amber: #F59E0B;
     --amber-dim: rgba(245, 158, 11, 0.1);
+    --accent: #3B82F6;
+    --accent-dim: rgba(59, 130, 246, 0.1);
+    --accent-glow: rgba(59, 130, 246, 0.25);
     --text-primary: #F8FAFC;
     --text-secondary: #94A3B8;
     --text-muted: #64748B;
@@ -60,6 +63,9 @@
     --green-dim: rgba(34, 197, 94, 0.08);
     --red-dim: rgba(239, 68, 68, 0.08);
     --amber-dim: rgba(245, 158, 11, 0.08);
+    --accent: #3B82F6;
+    --accent-dim: rgba(59, 130, 246, 0.08);
+    --accent-glow: rgba(59, 130, 246, 0.15);
     --text-primary: #0F172A;
     --text-secondary: #475569;
     --text-muted: #64748B;
@@ -160,7 +166,7 @@
     background-clip: text;
   }
   .btn-primary {
-    background: linear-gradient(135deg, var(--blue), var(--purple));
+    background: linear-gradient(135deg, var(--accent, var(--blue)), var(--purple));
     color: white;
     border: none;
     font-weight: 600;

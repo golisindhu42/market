@@ -16,7 +16,7 @@ export default function DashboardPage() {
     timeframe, handleTimeframeChange,
     isFullscreen, setIsFullscreen,
     chartZoom, setChartZoom, chartLoading,
-    indicatorConfig, setIndicatorConfig,
+    indicatorConfig, setIndicatorConfig, setShowIndicators,
     stockData, history, addToast,
     stockList, totalChange, totalValue, sentimentAvg, aiConfidence, chartData,
   } = useDashboard()
@@ -42,7 +42,7 @@ export default function DashboardPage() {
               onZoomIn={() => setChartZoom((z: number) => Math.min(z * 1.5, 10))}
               onZoomOut={() => setChartZoom((z: number) => Math.max(z / 1.5, 0.1))}
               onRefresh={() => { handleTimeframeChange(timeframe); addToast('Chart data refreshed', 'success') }}
-              onOpenIndicators={() => {}} // handled by Layout via context
+              onOpenIndicators={() => setShowIndicators(true)}
               indicatorConfig={indicatorConfig}
               onToggleIndicator={(key: string) => setIndicatorConfig(prev => ({ ...prev, [key as keyof typeof prev]: !prev[key as keyof typeof prev] }))}
               addToast={addToast}
@@ -82,7 +82,7 @@ export default function DashboardPage() {
           onZoomIn={() => setChartZoom((z: number) => Math.min(z * 1.5, 10))}
           onZoomOut={() => setChartZoom((z: number) => Math.max(z / 1.5, 0.1))}
           onRefresh={() => { handleTimeframeChange(timeframe); addToast('Chart refreshed', 'success') }}
-          onOpenIndicators={() => {}}
+          onOpenIndicators={() => setShowIndicators(true)}
           indicatorConfig={indicatorConfig}
           onToggleIndicator={(key: string) => setIndicatorConfig(prev => ({ ...prev, [key as keyof typeof prev]: !prev[key as keyof typeof prev] }))}
           addToast={addToast}

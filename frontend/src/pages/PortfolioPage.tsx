@@ -26,6 +26,7 @@ export default function PortfolioPage() {
   const navigate = useNavigate()
   const { addToast } = useDashboard()
   const [showExport, setShowExport] = useState(false)
+  const [refreshingAI, setRefreshingAI] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -164,8 +165,27 @@ export default function PortfolioPage() {
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
           Your portfolio shows strong diversification across tech giants with a <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{totalPLPercent.toFixed(1)}%</span> return. NVDA is the top performer at +27.6%, driven by AI demand tailwinds. Consider rebalancing to reduce TSLA concentration risk. The portfolio beta is approximately 1.2, indicating slightly higher volatility than the broader market. Recommended hedge: add defensive positions (e.g., consumer staples) to reduce drawdown risk.
         </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { addToast('Refresh AI analysis', 'success') }} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: 11, marginTop: 12 }}>
-          <RefreshCw size={11} /> Refresh Analysis
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          onClick={async () => {
+            setRefreshingAI(true)
+            await new Promise(r => setTimeout(r, 1200))
+            setRefreshingAI(false)
+            addToast('AI analysis refreshed', 'success')
+          }}
+          disabled={refreshingAI}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+            borderRadius: 8, fontSize: 11, marginTop: 12, cursor: refreshingAI ? 'not-allowed' : 'pointer',
+            opacity: refreshingAI ? 0.6 : 1,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+            color: 'var(--text-secondary)', fontWeight: 500, transition: 'all 0.15s',
+          }}
+        >
+          <motion.span animate={refreshingAI ? { rotate: 360 } : {}} transition={refreshingAI ? { repeat: Infinity, duration: 1, ease: 'linear' } : {}} style={{ display: 'inline-flex' }}>
+            <RefreshCw size={11} />
+          </motion.span>
+          {refreshingAI ? 'Refreshing...' : 'Refresh Analysis'}
         </motion.button>
       </motion.div>
     </motion.div>

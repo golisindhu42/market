@@ -11,7 +11,7 @@ interface Props {
   stockCount: number
 }
 
-function AnimatedNumber({ value, prefix = '', decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
+function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
   const [display, setDisplay] = useState(value)
   const displayRef = useRef(display)
   displayRef.current = display
@@ -33,7 +33,7 @@ function AnimatedNumber({ value, prefix = '', decimals = 0 }: { value: number; p
     return () => cancelAnimationFrame(frame)
   }, [value])
   return (
-    <span>{prefix}{display.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</span>
+    <span>{prefix}{display.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}</span>
   )
 }
 
